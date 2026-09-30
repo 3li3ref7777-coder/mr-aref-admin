@@ -2,7 +2,7 @@ const { defineConfig } = require('@vue/cli-service')
 
 module.exports = defineConfig({
   transpileDependencies: true,
-  publicPath: process.env.NODE_ENV === 'production' ? '/mr-aref-admin/' : '/',
+  publicPath: '/', // تم التعديل هنا ليتوافق مع Vercel
   configureWebpack: {
     performance: {
       hints: false
