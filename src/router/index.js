@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHashHistory } from 'vue-router'
 import { auth } from '../firebase'
 import AdminLogin from '../views/AdminLogin.vue'
 import AdminDashboard from '../views/AdminDashboard.vue'
@@ -7,7 +7,7 @@ import GradeManagement from '../views/GradeManagement.vue'
 const routes = [
   {
     path: '/',
-    redirect: '/admin/dashboard', // <-- هذا السطر هو الحل لمشكلة الصفحة البيضاء
+    redirect: '/admin/dashboard',
   },
   {
     path: '/admin/login',
@@ -34,7 +34,7 @@ const routes = [
 ]
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHashHistory(), // تم التعديل هنا لتجنب مشاكل التوجيه والشاشة البيضاء
   routes,
 })
 
