@@ -22,7 +22,8 @@ const gradeSettings = ref({
     girls: [''] 
   },
   frontBookImage: '',
-  backBookImage: ''
+  backBookImage: '',
+  generalBookLocation: 'مكتبة الأستاذ ممدوح عند مصطفى كلر'
 })
 
 let unsubscribeBookings = null
@@ -44,6 +45,10 @@ async function fetchSettings() {
     const docSnap = await getDoc(docRef)
     if (docSnap.exists()) {
       const data = docSnap.data()
+      
+      // جلب مكان الحصول على الكتاب العام إن وجد
+      const globalLocation = data.generalBookLocation || 'مكتبة الأستاذ ممدوح عند مصطفى كلر'
+
       if (data[gradeName]) {
         const savedData = data[gradeName]
         if (typeof savedData.schedules?.boys === 'string') {
@@ -55,11 +60,14 @@ async function fetchSettings() {
         gradeSettings.value = { 
           ...gradeSettings.value, 
           ...savedData,
+          generalBookLocation: globalLocation,
           schedules: {
             boys: savedData.schedules?.boys?.length ? savedData.schedules.boys : [''],
             girls: savedData.schedules?.girls?.length ? savedData.schedules.girls : ['']
           }
         }
+      } else {
+        gradeSettings.value.generalBookLocation = globalLocation
       }
     }
   } catch (error) {
@@ -84,7 +92,7 @@ function resetToDefaultImages() {
   gradeSettings.value.backBookImage = '/imges/imges_boock/back(1).jpeg'
 }
 
-// دالة ضغط ومعالجة الصورة محلياً لتفادي أي تعليق وضمان عملها فورا
+// دالة ضغط ومعالجة الصورة محلياً
 async function uploadImageToCloud(event, imageType) {
   const file = event.target.files[0]
   if (!file) return
@@ -101,7 +109,6 @@ async function uploadImageToCloud(event, imageType) {
     const img = new Image()
     img.src = e.target.result
     img.onload = () => {
-      // تصغير أبعاد الصورة لضمان خفة حجمها وعدم تضخم بيانات القاعدة
       const canvas = document.createElement('canvas')
       const MAX_WIDTH = 600
       const MAX_HEIGHT = 800
@@ -125,7 +132,6 @@ async function uploadImageToCloud(event, imageType) {
       const ctx = canvas.getContext('2d')
       ctx.drawImage(img, 0, 0, width, height)
 
-      // تحويل الصورة لصيغة ضغط عالي (JPEG بجودة 0.7)
       const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7)
 
       if (imageType === 'front') {
@@ -151,8 +157,14 @@ async function saveSettings() {
   try {
     isSavingSettings.value = true
     const docRef = doc(db, 'siteSettings', 'general')
-    await setDoc(docRef, { [gradeName]: gradeSettings.value }, { merge: true })
-    alert(`تم حفظ إعدادات ${gradeName} بنجاح!`)
+    
+    // نقوم بحفظ إعدادات الصف بالإضافة إلى مكان الحصول على الكتاب في المستوى الجذري للمستند ليكون موحداً
+    await setDoc(docRef, { 
+      [gradeName]: gradeSettings.value,
+      generalBookLocation: gradeSettings.value.generalBookLocation 
+    }, { merge: true })
+    
+    alert(`تم حفظ إعدادات ${gradeName} وتحديث مكان الكتاب بنجاح!`)
   } catch (error) {
     console.error('Error saving settings:', error)
     alert('حدث خطأ أثناء الحفظ.')
@@ -255,10 +267,16 @@ onBeforeUnmount(() => {
         <div class="col-12">
           <div class="p-3 border rounded bg-light">
             <div class="d-flex justify-content-between align-items-center mb-2">
-              <h6 class="fw-bold text-dark mb-0"><i class="fa-solid fa-book me-1 text-primary"></i> صور الكتاب الدراسي</h6>
+              <h6 class="fw-bold text-dark mb-0"><i class="fa-solid fa-book me-1 text-primary"></i> صور الكتاب الدراسي ومكان الحصول عليه</h6>
               <button type="button" class="btn btn-outline-secondary btn-sm" @click="resetToDefaultImages">
                 <i class="fa-solid fa-rotate-left me-1"></i> الرجوع للصور الأساسية
               </button>
+            </div>
+
+            <!-- مكان الحصول على الكتاب الموحد -->
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-primary">مكان الحصول على الكتاب (موحد لجميع الصفوف):</label>
+              <input v-model="gradeSettings.generalBookLocation" type="text" class="form-control" placeholder="مثال: مكتبة الأستاذ ممدوح عند مصطفى كلر" />
             </div>
 
             <div v-if="isUploading" class="alert alert-info py-2 small mb-2">
